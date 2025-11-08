@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   redis:
@@ -7,6 +7,11 @@ services:
       - "6379:6379"
     networks:
       - voting_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
 
   db:
     image: postgres:15-alpine
@@ -21,6 +26,11 @@ services:
       - "5432:5432"
     networks:
       - voting_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
 
   vote-api:
     build: ./app/vote-api
@@ -31,18 +41,29 @@ services:
     networks:
       - voting_network
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
 
   worker:
     build: ./app/worker
     environment:
       - REDIS_HOST=redis
       - DB_HOST=db
+      - DB_NAME=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
     networks:
       - voting_network
     depends_on:
-      - redis
-      - db
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
 
   result-api:
     build: ./app/result-api
@@ -50,10 +71,19 @@ services:
       - "8081:80"
     environment:
       - DB_HOST=db
+      - DB_NAME=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
     networks:
       - voting_network
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
 
   vote-ui:
     build:
@@ -61,18 +91,17 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:80"
-    # In docker-compose, nginx needs to resolve the service names.
-    # We can't use the same nginx.conf as for K8s without modification.
-    # A simple solution is to have separate configs, or use envsubst.
-    # For now, I will create a docker-compose specific nginx config.
     networks:
       - voting_network
     depends_on:
-      - vote-api
-      - result-api
+      vote-api:
+        condition: service_healthy
+      result-api:
+        condition: service_healthy
 
 networks:
   voting_network:
+    driver: bridge
 
 volumes:
   db-data:
