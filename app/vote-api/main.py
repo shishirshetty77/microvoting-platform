@@ -4,7 +4,8 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from redis import Redis, ConnectionError
 from pydantic import BaseModel
-from prometheus_fastapi_instrumentator import Instrumentator, Counter
+from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import Counter
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -21,7 +22,7 @@ app = FastAPI()
 instrumentator = Instrumentator().instrument(app)
 
 # Add a custom metric to count votes
-votes_counter = Counter("votes_total", "Total number of votes cast", labels=["candidate"])
+votes_counter = Counter("votes_total", "Total number of votes cast", labelnames=["candidate"])
 
 @app.on_event("startup")
 async def startup():

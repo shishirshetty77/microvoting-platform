@@ -4,7 +4,8 @@ import psycopg2
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
 from psycopg2.extras import RealDictCursor
-from prometheus_fastapi_instrumentator import Instrumentator, Gauge
+from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import Gauge
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -17,7 +18,7 @@ app = FastAPI()
 instrumentator = Instrumentator().instrument(app)
 
 # Add a custom metric to report vote counts
-results_gauge = Gauge("vote_results", "Current vote counts for each candidate", labels=["candidate"])
+results_gauge = Gauge("vote_results", "Current vote counts for each candidate", labelnames=["candidate"])
 
 @app.on_event("startup")
 async def startup():
