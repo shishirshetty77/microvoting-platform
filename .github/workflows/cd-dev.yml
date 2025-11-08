@@ -1,0 +1,42 @@
+name: CD - Deploy to Dev
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-dev:
+    name: Deploy to Dev Environment
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.GCP_WIF_POOL }}/providers/${{ secrets.GCP_WIF_PROVIDER }}'
+          service_account: '${{ secrets.GCP_SA_EMAIL }}'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Get GKE credentials
+        run: gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --region ${{ secrets.GCP_REGION }}
+
+      - name: Deploy to Dev
+        run: |
+          helm upgrade --install voting-app ./charts/voting-app \
+            --namespace dev \
+            --create-namespace \
+            --set global.imageRegistry=${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/voting-app-images \
+            --set vote-api.image.tag=${{ github.sha }} \
+            --set result-api.image.tag=${{ github.sha }} \
+            --set worker.image.tag=${{ github.sha }} \
+            --set vote-ui.image.tag=${{ github.sha }} \
+            -f ./charts/voting-app/values-dev.yaml

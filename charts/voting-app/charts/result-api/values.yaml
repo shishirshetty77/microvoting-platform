@@ -1,0 +1,26 @@
+# Default values for result-api.
+replicaCount: 1
+
+image:
+  repository: "result-api"
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Database connection details
+database:
+  host: "postgresql"
+  user: "postgres"
+  name: "postgres"
+  secretName: "postgresql-secret" # The name of the secret holding the password
