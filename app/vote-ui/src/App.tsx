@@ -8,12 +8,35 @@ const App = () => {
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const handleReset = async () => {
+    setLoading(true);
+    try {
+      await axios.post('/api/reset');
+      setToast({ type: 'success', text: 'Votes reset!' });
+    } catch {
+      setToast({ type: 'error', text: 'Reset failed.' });
+    } finally {
+      setLoading(false);
+      setTimeout(() => setToast(null), 3000);
+    }
+  };
+
   const voteApiUrl = '/api/vote';
   const resultApiUrl = '/api/results';
 
   const candidates = [
-    { id: 'a', name: 'Ferrari', color: 'bg-red-600', hoverColor: 'hover:bg-red-700' },
-    { id: 'b', name: 'Lamborghini', color: 'bg-yellow-400', hoverColor: 'hover:bg-yellow-500' },
+    {
+      id: 'a',
+      name: 'Ferrari',
+      color: 'bg-gradient-to-br from-red-600 via-red-700 to-black',
+      glow: 'shadow-[0_0_45px_rgba(255,40,40,0.85)]',
+    },
+    {
+      id: 'b',
+      name: 'Lamborghini',
+      color: 'bg-gradient-to-br from-yellow-400 via-yellow-500 to-black',
+      glow: 'shadow-[0_0_45px_rgba(255,230,0,0.85)]',
+    },
   ];
 
   useEffect(() => {
@@ -21,9 +44,8 @@ const App = () => {
       try {
         const res = await axios.get(resultApiUrl);
         setResults(res.data);
-      } catch (error) {
-        console.error("Could not fetch results.", error);
-        setToast({ type: 'error', text: 'Unable to fetch results. Please try again later.' });
+      } catch {
+        setToast({ type: 'error', text: 'Failed to fetch results.' });
       }
     };
 
@@ -35,10 +57,12 @@ const App = () => {
     setLoading(true);
     try {
       await axios.post(voteApiUrl, { candidate });
-      setToast({ type: 'success', text: `Successfully voted for ${candidates.find(c => c.id === candidate)?.name}!` });
-    } catch (error) {
-      setToast({ type: 'error', text: 'Could not submit vote.' });
-      console.error("Could not submit vote.", error);
+      setToast({
+        type: 'success',
+        text: `Voted for ${candidates.find(c => c.id === candidate)?.name}`,
+      });
+    } catch {
+      setToast({ type: 'error', text: 'Vote failed.' });
     } finally {
       setLoading(false);
       setTimeout(() => setToast(null), 3000);
@@ -48,76 +72,126 @@ const App = () => {
   const totalVotes = Object.values(results).reduce((sum, count) => sum + count, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-900 text-white font-sans">
-      <main className="flex flex-col items-center justify-center min-h-screen p-4">
+    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-gray-900 text-white font-sans relative overflow-hidden">
+
+      {/* Background glow */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute w-[450px] h-[450px] bg-red-700/20 rounded-full blur-[120px] top-10 left-0"></div>
+        <div className="absolute w-[450px] h-[450px] bg-yellow-500/20 rounded-full blur-[120px] bottom-10 right-0"></div>
+      </div>
+
+      <main className="flex flex-col items-center justify-center min-h-screen p-4 relative z-10">
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-2xl mx-auto bg-gray-800/30 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden"
+          transition={{ duration: 0.6 }}
+          className="
+            w-full max-w-2xl mx-auto
+            bg-white/10 backdrop-blur-2xl
+            border border-white/10 
+            rounded-3xl shadow-2xl p-10"
         >
-          <div className="p-8">
-            <h1 className="text-3xl font-bold text-center mb-2">
-              🏎️ Vote for Your Dream Supercar
-            </h1>
-            <p className="text-center text-gray-400 mb-8">
-              Choose between two legends of the road.
-            </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {candidates.map((candidate) => (
-                <motion.button
-                  key={candidate.id}
-                  onClick={() => handleVote(candidate.id)}
-                  disabled={loading}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`p-6 rounded-xl text-center font-bold text-xl ${candidate.color} ${candidate.hoverColor} transition-colors duration-300 disabled:opacity-50`}
-                >
-                  {candidate.name}
-                </motion.button>
-              ))}
-            </div>
+          {/* Header */}
+          <h1 className="text-4xl font-extrabold text-center mb-3">
+            🏎️ Vote Your Favorite Supercar
+          </h1>
+          <p className="text-center text-gray-300 mb-12">Choose your champion.</p>
 
-            <div className="space-y-4">
-              <h2 className="text-xl font-bold text-center mb-4">Live Results</h2>
-              {candidates.map((candidate) => {
-                const votes = results[candidate.id] || 0;
-                const percentage = totalVotes > 0 ? (votes / totalVotes) * 100 : 0;
-                return (
-                  <div key={candidate.id}>
-                    <div className="flex justify-between mb-1">
-                      <span className="font-bold">{candidate.name}</span>
-                      <span>{votes} Votes ({percentage.toFixed(1)}%)</span>
-                    </div>
-                    <div className="w-full bg-gray-700 rounded-full h-4">
-                      <motion.div
-                        className={`${candidate.color} h-4 rounded-full`}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${percentage}%` }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }}
-                      />
-                    </div>
+          {/* ========== BUTTONS ========== */}
+
+          {/* TOP ROW: Ferrari & Lamborghini */}
+          <div className="grid grid-cols-2 gap-8 mb-10">
+            {candidates.map(c => (
+              <motion.button
+                key={c.id}
+                onClick={() => handleVote(c.id)}
+                disabled={loading}
+                whileHover={{ scale: 1.12 }}
+                whileTap={{ scale: 0.90 }}
+                animate={{
+                  y: [0, -3, 0],
+                  boxShadow: [
+                    "0 0 25px rgba(255,255,255,0.15)",
+                    c.glow.replace("45px", "65px"),
+                    "0 0 25px rgba(255,255,255,0.15)"
+                  ]
+                }}
+                transition={{ duration: 2.4, repeat: Infinity }}
+                className={`
+                  p-6 rounded-2xl text-center text-2xl font-extrabold 
+                  transition-all duration-300 disabled:opacity-50
+                  border border-white/20 backdrop-blur-xl
+                  ${c.color} ${c.glow}
+                `}
+              >
+                {c.name}
+              </motion.button>
+            ))}
+          </div>
+
+          {/* CENTER RESET BUTTON */}
+          <motion.button
+            onClick={handleReset}
+            disabled={loading}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.92 }}
+            animate={{ opacity: [0.9, 1, 0.9] }}
+            transition={{ duration: 2.5, repeat: Infinity }}
+            className="
+              mx-auto block mt-2 mb-12
+              p-5 w-48 rounded-2xl text-center text-xl font-bold 
+              border border-white/20 backdrop-blur-xl shadow-lg
+              bg-gradient-to-br from-gray-300 via-gray-400 to-gray-700
+              text-black
+              hover:brightness-110 transition-all
+            "
+          >
+            Reset
+          </motion.button>
+
+          {/* ========== RESULTS ========== */}
+
+          <h2 className="text-2xl font-bold text-center mb-6">Live Results</h2>
+
+          <div className="space-y-6">
+            {candidates.map(candidate => {
+              const votes = results[candidate.id] || 0;
+              const pct = totalVotes > 0 ? (votes / totalVotes) * 100 : 0;
+
+              return (
+                <div key={candidate.id}>
+                  <div className="flex justify-between mb-1">
+                    <span className="font-bold">{candidate.name}</span>
+                    <span>{votes} votes ({pct.toFixed(1)}%)</span>
                   </div>
-                );
-              })}
-            </div>
+
+                  <div className="w-full bg-gray-700/40 rounded-full h-5 overflow-hidden">
+                    <motion.div
+                      className={`${candidate.color} h-full`}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: 0.8 }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </motion.div>
-        <footer className="text-center text-gray-500 mt-8">
-          Powered by MicroVoting Platform
-        </footer>
       </main>
 
+      {/* Toast */}
       <AnimatePresence>
         {toast && (
           <motion.div
-            initial={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className={`fixed bottom-10 right-10 p-4 rounded-lg shadow-lg ${
-              toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-            }`}
+            exit={{ opacity: 0, y: 30 }}
+            className={`
+              fixed bottom-10 right-10 px-5 py-4 text-lg rounded-lg shadow-xl
+              ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'}
+            `}
           >
             {toast.text}
           </motion.div>
