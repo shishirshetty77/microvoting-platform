@@ -29,13 +29,13 @@ const App = () => {
       id: 'a',
       name: 'Ferrari',
       color: 'bg-gradient-to-br from-red-600 via-red-700 to-black',
-      glow: 'shadow-[0_0_40px_rgba(255,50,50,0.9)]',
+      glow: 'shadow-[0_0_45px_rgba(255,40,40,0.85)]',
     },
     {
       id: 'b',
       name: 'Lamborghini',
       color: 'bg-gradient-to-br from-yellow-400 via-yellow-500 to-black',
-      glow: 'shadow-[0_0_40px_rgba(255,240,0,0.9)]',
+      glow: 'shadow-[0_0_45px_rgba(255,230,0,0.85)]',
     },
   ];
 
@@ -74,10 +74,10 @@ const App = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-gray-900 text-white font-sans relative overflow-hidden">
 
-      {/* glowing background */}
+      {/* Background glow */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute w-[500px] h-[500px] bg-red-700/20 rounded-full blur-3xl top-10 left-0"></div>
-        <div className="absolute w-[500px] h-[500px] bg-yellow-500/20 rounded-full blur-3xl bottom-10 right-0"></div>
+        <div className="absolute w-[450px] h-[450px] bg-red-700/20 rounded-full blur-[120px] top-10 left-0"></div>
+        <div className="absolute w-[450px] h-[450px] bg-yellow-500/20 rounded-full blur-[120px] bottom-10 right-0"></div>
       </div>
 
       <main className="flex flex-col items-center justify-center min-h-screen p-4 relative z-10">
@@ -93,67 +93,67 @@ const App = () => {
         >
 
           {/* Header */}
-          <h1 className="text-4xl font-extrabold text-center mb-2 tracking-tight">
+          <h1 className="text-4xl font-extrabold text-center mb-3">
             🏎️ Vote Your Favorite Supercar
           </h1>
-          <p className="text-center text-gray-300 mb-10">
-            Ferrari vs Lamborghini — choose your legend.
-          </p>
+          <p className="text-center text-gray-300 mb-12">Choose your champion.</p>
 
-          {/* Button Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+          {/* ========== BUTTONS ========== */}
 
+          {/* TOP ROW: Ferrari & Lamborghini */}
+          <div className="grid grid-cols-2 gap-8 mb-10">
             {candidates.map(c => (
               <motion.button
                 key={c.id}
                 onClick={() => handleVote(c.id)}
                 disabled={loading}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.92 }}
+                whileHover={{ scale: 1.12 }}
+                whileTap={{ scale: 0.90 }}
                 animate={{
-                  y: [0, -2, 0],
+                  y: [0, -3, 0],
                   boxShadow: [
-                    `0 0 20px rgba(255,255,255,0.2)`,
-                    c.glow.replace("40px", "60px"),
-                    `0 0 20px rgba(255,255,255,0.2)`
+                    "0 0 25px rgba(255,255,255,0.15)",
+                    c.glow.replace("45px", "65px"),
+                    "0 0 25px rgba(255,255,255,0.15)"
                   ]
                 }}
-                transition={{ duration: 2, repeat: Infinity }}
+                transition={{ duration: 2.4, repeat: Infinity }}
                 className={`
-                  p-6 rounded-xl text-center text-2xl font-bold 
+                  p-6 rounded-2xl text-center text-2xl font-extrabold 
                   transition-all duration-300 disabled:opacity-50
-                  ${c.color} ${c.glow}
                   border border-white/20 backdrop-blur-xl
+                  ${c.color} ${c.glow}
                 `}
               >
                 {c.name}
               </motion.button>
             ))}
-
-            {/* Reset Button – now symmetrical */}
-            <motion.button
-              onClick={handleReset}
-              disabled={loading}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.92 }}
-              animate={{
-                y: [0, -1, 0],
-                opacity: [0.9, 1, 0.9]
-              }}
-              transition={{ duration: 3, repeat: Infinity }}
-              className="
-                p-6 rounded-xl text-center text-2xl font-bold 
-                bg-gray-600/40 hover:bg-gray-600/60
-                border border-white/10
-                backdrop-blur-xl shadow-xl transition-all
-              "
-            >
-              Reset
-            </motion.button>
           </div>
 
-          {/* Results */}
+          {/* CENTER RESET BUTTON */}
+          <motion.button
+            onClick={handleReset}
+            disabled={loading}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.92 }}
+            animate={{ opacity: [0.9, 1, 0.9] }}
+            transition={{ duration: 2.5, repeat: Infinity }}
+            className="
+              mx-auto block mt-2 mb-12
+              p-5 w-48 rounded-2xl text-center text-xl font-bold 
+              border border-white/20 backdrop-blur-xl shadow-lg
+              bg-gradient-to-br from-gray-300 via-gray-400 to-gray-700
+              text-black
+              hover:brightness-110 transition-all
+            "
+          >
+            Reset
+          </motion.button>
+
+          {/* ========== RESULTS ========== */}
+
           <h2 className="text-2xl font-bold text-center mb-6">Live Results</h2>
+
           <div className="space-y-6">
             {candidates.map(candidate => {
               const votes = results[candidate.id] || 0;
