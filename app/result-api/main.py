@@ -93,6 +93,34 @@ def get_results():
         if conn:
             conn.close()
 
+# Endpoint to reset votes
+from fastapi import Request
+@app.post("/reset")
+async def reset_votes(request: Request):
+    conn = get_db_conn()
+    if not conn:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"message": "Could not connect to the database."},
+        )
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM votes;")
+            conn.commit()
+        # Reset Prometheus gauge
+        for candidate in ["a", "b"]:
+            results_gauge.labels(candidate=candidate).set(0)
+        return {"message": "Votes have been reset."}
+    except Exception as e:
+        logger.error(f"Error resetting votes: {e}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"message": "An error occurred while resetting votes."},
+        )
+    finally:
+        if conn:
+            conn.close()
+
 
 @app.get("/health")
 def health_check():

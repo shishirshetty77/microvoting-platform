@@ -8,6 +8,21 @@ const App = () => {
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Reset votes handler
+  const handleReset = async () => {
+    setLoading(true);
+    try {
+      await axios.post('/api/reset');
+      setToast({ type: 'success', text: 'Votes have been reset!' });
+    } catch (error) {
+      setToast({ type: 'error', text: 'Could not reset votes.' });
+      console.error('Could not reset votes.', error);
+    } finally {
+      setLoading(false);
+      setTimeout(() => setToast(null), 3000);
+    }
+  };
+
   const voteApiUrl = '/api/vote';
   const resultApiUrl = '/api/results';
 
@@ -77,6 +92,15 @@ const App = () => {
                   {candidate.name}
                 </motion.button>
               ))}
+                <motion.button
+                  onClick={handleReset}
+                  disabled={loading}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="p-6 rounded-xl text-center font-bold text-xl bg-gray-500 hover:bg-gray-600 transition-colors duration-300 disabled:opacity-50"
+                >
+                  Reset
+                </motion.button>
             </div>
 
             <div className="space-y-4">
