@@ -1,11 +1,13 @@
-import os
 import logging
+import os
+
 import psycopg2
-from fastapi import FastAPI, status
+import uvicorn
+from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
-from psycopg2.extras import RealDictCursor
-from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import Gauge
+from prometheus_fastapi_instrumentator import Instrumentator
+from psycopg2.extras import RealDictCursor
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -15,17 +17,13 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
-
-
 # Instrument the app with Prometheus
 instrumentator = Instrumentator().instrument(app)
 
 # Add a custom metric to report vote counts
 results_gauge = Gauge(
-    "vote_results", "Current vote counts for each candidate", labelnames=["candidate"]
+    "vote_results", "Current vote counts for each candidate",
+    labelnames=["candidate"]
 )
 
 
@@ -63,14 +61,16 @@ def get_results():
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
-                "message": "Result service is currently unavailable. Could not connect to the database."
+                "message": "Result service is currently unavailable. "
+                           "Could not connect to the database."
             },
         )
 
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
-                "SELECT candidate, COUNT(id) AS votes FROM votes GROUP BY candidate"
+                "SELECT candidate, COUNT(id) AS votes "
+                "FROM votes GROUP BY candidate"
             )
             results = cursor.fetchall()
 
@@ -93,8 +93,8 @@ def get_results():
         if conn:
             conn.close()
 
+
 # Endpoint to reset votes
-from fastapi import Request
 @app.post("/reset")
 async def reset_votes(request: Request):
     conn = get_db_conn()
@@ -128,6 +128,4 @@ def health_check():
 
 
 if __name__ == "__main__":
-    import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=80)

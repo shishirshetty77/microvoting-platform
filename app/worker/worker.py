@@ -1,12 +1,14 @@
+import logging
 import os
 import time
-import logging
+
 import psycopg2
-from redis import Redis, ConnectionError
+from redis import ConnectionError, Redis
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 # --- Connection Functions ---
 def get_redis_conn():
@@ -14,13 +16,18 @@ def get_redis_conn():
     redis_port = int(os.getenv("REDIS_PORT", 6379))
     while True:
         try:
-            r = Redis(host=redis_host, port=redis_port, db=0, decode_responses=True)
+            r = Redis(
+                host=redis_host, port=redis_port, db=0, decode_responses=True
+            )
             r.ping()
             logger.info("Successfully connected to Redis.")
             return r
         except ConnectionError:
-            logger.warning("Could not connect to Redis, retrying in 5 seconds...")
+            logger.warning(
+                "Could not connect to Redis, retrying in 5 seconds..."
+            )
             time.sleep(5)
+
 
 def get_db_conn():
     db_host = os.getenv("DB_HOST", "db")
@@ -38,8 +45,11 @@ def get_db_conn():
             logger.info("Successfully connected to the database.")
             return conn
         except psycopg2.OperationalError:
-            logger.warning("Could not connect to database, retrying in 5 seconds...")
+            logger.warning(
+                "Could not connect to database, retrying in 5 seconds..."
+            )
             time.sleep(5)
+
 
 # --- Database Initialization ---
 def initialize_database(conn):
@@ -59,6 +69,7 @@ def initialize_database(conn):
         # or handle it in a way that the application can retry.
         raise
 
+
 # --- Main Worker Loop ---
 def main():
     redis_conn = get_redis_conn()
@@ -69,10 +80,10 @@ def main():
         initialize_database(db_conn)
     except Exception as e:
         logger.critical(f"Exiting due to database initialization failure: {e}")
-        return # Exit if DB can't be initialized
+        return  # Exit if DB can't be initialized
 
     logger.info("Worker started. Waiting for votes...")
-    
+
     # Continuously process votes from the Redis queue
     while True:
         try:
@@ -84,10 +95,15 @@ def main():
             with db_conn.cursor() as cursor:
                 # Using a simplified unique ID for the example
                 vote_id = f"vote_{int(time.time() * 1000)}"
-                cursor.execute("INSERT INTO votes (id, candidate) VALUES (%s, %s)", (vote_id, vote))
+                cursor.execute(
+                    "INSERT INTO votes (id, candidate) VALUES (%s, %s)",
+                    (vote_id, vote)
+                )
                 db_conn.commit()
-            
-            logger.info(f"Vote for '{vote}' successfully stored in the database.")
+
+            logger.info(
+                f"Vote for '{vote}' successfully stored in the database."
+            )
 
         except ConnectionError:
             logger.error("Connection to Redis lost. Reconnecting...")
@@ -102,6 +118,7 @@ def main():
             logger.error(f"An unexpected error occurred: {e}")
             # Wait a bit before retrying to avoid fast failure loops
             time.sleep(5)
+
 
 if __name__ == "__main__":
     main()
