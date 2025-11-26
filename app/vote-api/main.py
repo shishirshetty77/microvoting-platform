@@ -9,25 +9,20 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel
 from redis import ConnectionError, Redis
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-# Define the vote model
 class Vote(BaseModel):
     candidate: str
     voter_id: str
 
 
-# Initialize FastAPI app
 app = FastAPI()
 
 
-# Instrument the app with Prometheus
 instrumentator = Instrumentator().instrument(app)
 
-# Add a custom metric to count votes
 votes_counter = Counter(
     "votes_total", "Total number of votes cast", labelnames=["candidate"]
 )
@@ -38,7 +33,6 @@ async def startup():
     instrumentator.expose(app)
 
 
-# Connect to Redis
 def get_redis_conn():
     redis_host = os.getenv("REDIS_HOST", "redis")
     redis_port = int(os.getenv("REDIS_PORT", 6379))
@@ -73,10 +67,8 @@ async def submit_vote(vote: Vote):
         )
 
     try:
-        # Increment the custom metric
         votes_counter.labels(candidate=vote.candidate).inc()
 
-        # Push the vote to a Redis list as a JSON string
         import json
         vote_data = json.dumps(
             {"voter_id": vote.voter_id, "candidate": vote.candidate}

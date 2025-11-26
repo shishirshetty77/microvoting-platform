@@ -30,7 +30,7 @@ The application consists of the following components:
 
 ```mermaid
 graph LR
-    User[User (Browser)] -->|Vote| UI[Vote UI]
+    User["User (Browser)"] -->|Vote| UI[Vote UI]
     UI -->|POST /vote| API[Vote API]
     API -->|Push| Redis[(Redis Queue)]
     Worker[Worker] -->|Pop| Redis

@@ -18,8 +18,9 @@ const App = () => {
         headers: { 'X-Admin-Key': password }
       });
       setToast({ type: 'success', text: 'Votes reset!' });
-    } catch (err: any) {
-      if (err.response && err.response.status === 401) {
+    } catch (err: unknown) {
+      const error = err as { response?: { status: number } };
+      if (error.response && error.response.status === 401) {
         setToast({ type: 'error', text: 'Unauthorized: Wrong Password.' });
       } else {
         setToast({ type: 'error', text: 'Reset failed.' });
@@ -72,7 +73,7 @@ const App = () => {
       } else {
         // Simple UUID v4 generator fallback
         voterId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+          let r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
           return v.toString(16);
         });
       }

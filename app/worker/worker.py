@@ -5,12 +5,10 @@ import time
 import psycopg2
 from redis import ConnectionError, Redis
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-# --- Connection Functions ---
 def get_redis_conn():
     redis_host = os.getenv("REDIS_HOST", "redis")
     redis_port = int(os.getenv("REDIS_PORT", 6379))
@@ -51,7 +49,6 @@ def get_db_conn():
             time.sleep(5)
 
 
-# --- Database Initialization ---
 def initialize_database(conn):
     try:
         with conn.cursor() as cursor:
@@ -64,8 +61,9 @@ def initialize_database(conn):
             conn.commit()
             logger.info("Database table 'votes' is ready.")
 
-            # Check for and remove legacy votes (incompatible with new logic)
-            cursor.execute("SELECT COUNT(*) FROM votes WHERE id LIKE 'vote_%';")
+            cursor.execute(
+                "SELECT COUNT(*) FROM votes WHERE id LIKE 'vote_%';"
+            )
             legacy_count = cursor.fetchone()[0]
             if legacy_count > 0:
                 logger.warning(
@@ -78,44 +76,39 @@ def initialize_database(conn):
 
     except psycopg2.Error as e:
         logger.error(f"Error initializing database: {e}")
-        # If initialization fails, it's a critical error, so we might exit
-        # or handle it in a way that the application can retry.
         raise
 
 
-# --- Main Worker Loop ---
 def main():
     redis_conn = get_redis_conn()
     db_conn = get_db_conn()
 
-    # Ensure the table exists before starting the loop
     try:
         initialize_database(db_conn)
     except Exception as e:
         logger.critical(f"Exiting due to database initialization failure: {e}")
-        return  # Exit if DB can't be initialized
+        return
 
     logger.info("Worker started. Waiting for votes...")
 
-    # Continuously process votes from the Redis queue
     while True:
         try:
-            # Blocking pop from the 'votes' list
             _, vote_data = redis_conn.blpop("votes", timeout=0)
             import json
             vote_dict = json.loads(vote_data)
             voter_id = vote_dict["voter_id"]
             candidate = vote_dict["candidate"]
-            
-            logger.info(f"Processing vote for '{candidate}' from '{voter_id}'...")
 
-            # Insert or Update the vote in the database (UPSERT)
+            logger.info(
+                f"Processing vote for '{candidate}' from '{voter_id}'..."
+            )
+
             with db_conn.cursor() as cursor:
                 cursor.execute(
                     """
-                    INSERT INTO votes (id, candidate) 
+                    INSERT INTO votes (id, candidate)
                     VALUES (%s, %s)
-                    ON CONFLICT (id) 
+                    ON CONFLICT (id)
                     DO UPDATE SET candidate = EXCLUDED.candidate;
                     """,
                     (voter_id, candidate)
@@ -133,11 +126,9 @@ def main():
             logger.error(f"Database error: {e}. Reconnecting...")
             db_conn.close()
             db_conn = get_db_conn()
-            # Re-initialize to be safe, though the table should exist
             initialize_database(db_conn)
         except Exception as e:
             logger.error(f"An unexpected error occurred: {e}")
-            # Wait a bit before retrying to avoid fast failure loops
             time.sleep(5)
 
 

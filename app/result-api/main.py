@@ -9,18 +9,14 @@ from prometheus_client import Gauge
 from prometheus_fastapi_instrumentator import Instrumentator
 from psycopg2.extras import RealDictCursor
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI app
 app = FastAPI()
 
 
-# Instrument the app with Prometheus
 instrumentator = Instrumentator().instrument(app)
 
-# Add a custom metric to report vote counts
 results_gauge = Gauge(
     "vote_results", "Current vote counts for each candidate",
     labelnames=["candidate"]
@@ -32,7 +28,6 @@ async def startup():
     instrumentator.expose(app)
 
 
-# Database connection details
 def get_db_conn():
     db_host = os.getenv("DB_HOST", "db")
     db_name = os.getenv("DB_NAME", "postgres")
@@ -74,10 +69,8 @@ def get_results():
             )
             results = cursor.fetchall()
 
-        # Convert list of dicts to a single dict
         vote_counts = {row["candidate"]: row["votes"] for row in results}
 
-        # Update the gauge metric
         for candidate, votes in vote_counts.items():
             results_gauge.labels(candidate=candidate).set(votes)
 
@@ -94,7 +87,6 @@ def get_results():
             conn.close()
 
 
-# Endpoint to reset votes
 @app.post("/reset")
 async def reset_votes(request: Request):
     admin_key = os.getenv("ADMIN_KEY", "rivooq")
@@ -116,7 +108,6 @@ async def reset_votes(request: Request):
         with conn.cursor() as cursor:
             cursor.execute("DELETE FROM votes;")
             conn.commit()
-        # Reset Prometheus gauge
         for candidate in ["a", "b"]:
             results_gauge.labels(candidate=candidate).set(0)
         return {"message": "Votes have been reset."}
