@@ -53,10 +53,20 @@ const App = () => {
     return () => clearInterval(interval);
   }, [resultApiUrl]);
 
+  useEffect(() => {
+    // Generate or retrieve Voter ID
+    let voterId = localStorage.getItem('voter_id');
+    if (!voterId) {
+      voterId = crypto.randomUUID();
+      localStorage.setItem('voter_id', voterId);
+    }
+  }, []);
+
   const handleVote = async (candidate: string) => {
     setLoading(true);
+    const voterId = localStorage.getItem('voter_id');
     try {
-      await axios.post(voteApiUrl, { candidate });
+      await axios.post(voteApiUrl, { candidate, voter_id: voterId });
       setToast({
         type: 'success',
         text: `Voted for ${candidates.find(c => c.id === candidate)?.name}`,

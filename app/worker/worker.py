@@ -63,6 +63,19 @@ def initialize_database(conn):
             """)
             conn.commit()
             logger.info("Database table 'votes' is ready.")
+
+            # Check for and remove legacy votes (incompatible with new logic)
+            cursor.execute("SELECT COUNT(*) FROM votes WHERE id LIKE 'vote_%';")
+            legacy_count = cursor.fetchone()[0]
+            if legacy_count > 0:
+                logger.warning(
+                    f"Found {legacy_count} legacy votes. "
+                    "Removing them to enforce One-Vote-Per-Device."
+                )
+                cursor.execute("DELETE FROM votes WHERE id LIKE 'vote_%';")
+                conn.commit()
+                logger.info("Legacy votes removed.")
+
     except psycopg2.Error as e:
         logger.error(f"Error initializing database: {e}")
         # If initialization fails, it's a critical error, so we might exit
@@ -88,21 +101,29 @@ def main():
     while True:
         try:
             # Blocking pop from the 'votes' list
-            vote = redis_conn.blpop("votes", timeout=0)[1]
-            logger.info(f"Processing vote for '{vote}'...")
+            _, vote_data = redis_conn.blpop("votes", timeout=0)
+            import json
+            vote_dict = json.loads(vote_data)
+            voter_id = vote_dict["voter_id"]
+            candidate = vote_dict["candidate"]
+            
+            logger.info(f"Processing vote for '{candidate}' from '{voter_id}'...")
 
-            # Insert the vote into the database
+            # Insert or Update the vote in the database (UPSERT)
             with db_conn.cursor() as cursor:
-                # Using a simplified unique ID for the example
-                vote_id = f"vote_{int(time.time() * 1000)}"
                 cursor.execute(
-                    "INSERT INTO votes (id, candidate) VALUES (%s, %s)",
-                    (vote_id, vote)
+                    """
+                    INSERT INTO votes (id, candidate) 
+                    VALUES (%s, %s)
+                    ON CONFLICT (id) 
+                    DO UPDATE SET candidate = EXCLUDED.candidate;
+                    """,
+                    (voter_id, candidate)
                 )
                 db_conn.commit()
 
             logger.info(
-                f"Vote for '{vote}' successfully stored in the database."
+                f"Vote for '{candidate}' from '{voter_id}' processed."
             )
 
         except ConnectionError:

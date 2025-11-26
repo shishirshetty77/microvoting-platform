@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 # Define the vote model
 class Vote(BaseModel):
     candidate: str
+    voter_id: str
 
 
 # Initialize FastAPI app
@@ -75,8 +76,12 @@ async def submit_vote(vote: Vote):
         # Increment the custom metric
         votes_counter.labels(candidate=vote.candidate).inc()
 
-        # Push the vote to a Redis list
-        redis_conn.rpush("votes", vote.candidate)
+        # Push the vote to a Redis list as a JSON string
+        import json
+        vote_data = json.dumps(
+            {"voter_id": vote.voter_id, "candidate": vote.candidate}
+        )
+        redis_conn.rpush("votes", vote_data)
         logger.info(f"Vote for '{vote.candidate}' has been queued.")
         return {"message": f"Vote for '{vote.candidate}' accepted."}
     except Exception as e:
