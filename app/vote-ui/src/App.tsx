@@ -129,7 +129,7 @@ const App = () => {
           {/* ========== BUTTONS ========== */}
 
           {/* TOP ROW: Ferrari & Lamborghini */}
-          <div className="grid grid-cols-2 gap-8 mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
             {candidates.map(c => (
               <motion.button
                 key={c.id}
