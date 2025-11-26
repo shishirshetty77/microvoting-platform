@@ -57,7 +57,16 @@ const App = () => {
     // Generate or retrieve Voter ID
     let voterId = localStorage.getItem('voter_id');
     if (!voterId) {
-      voterId = crypto.randomUUID();
+      // Fallback for environments where crypto.randomUUID is not available (e.g. non-secure contexts)
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        voterId = crypto.randomUUID();
+      } else {
+        // Simple UUID v4 generator fallback
+        voterId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      }
       localStorage.setItem('voter_id', voterId);
     }
   }, []);
