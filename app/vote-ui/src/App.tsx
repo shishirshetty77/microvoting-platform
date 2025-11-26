@@ -64,16 +64,14 @@ const App = () => {
   }, [resultApiUrl]);
 
   useEffect(() => {
-    // Generate or retrieve Voter ID
     let voterId = localStorage.getItem('voter_id');
     if (!voterId) {
-      // Fallback for environments where crypto.randomUUID is not available (e.g. non-secure contexts)
       if (typeof crypto !== 'undefined' && crypto.randomUUID) {
         voterId = crypto.randomUUID();
       } else {
-        // Simple UUID v4 generator fallback
         voterId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          let r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+          const r = Math.random() * 16 | 0;
+          const v = c == 'x' ? r : (r & 0x3 | 0x8);
           return v.toString(16);
         });
       }
@@ -103,7 +101,6 @@ const App = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-gray-900 text-white font-sans relative overflow-hidden">
 
-      {/* Background glow */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute w-[450px] h-[450px] bg-red-700/20 rounded-full blur-[120px] top-10 left-0"></div>
         <div className="absolute w-[450px] h-[450px] bg-yellow-500/20 rounded-full blur-[120px] bottom-10 right-0"></div>
@@ -121,15 +118,11 @@ const App = () => {
             rounded-3xl shadow-2xl p-10"
         >
 
-          {/* Header */}
           <h1 className="text-4xl font-extrabold text-center mb-3">
             🏎️ Vote Your Favorite Supercar
           </h1>
           <p className="text-center text-gray-300 mb-12">Choose your champion.</p>
 
-          {/* ========== BUTTONS ========== */}
-
-          {/* TOP ROW: Ferrari & Lamborghini */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
             {candidates.map(c => (
               <motion.button
@@ -159,7 +152,6 @@ const App = () => {
             ))}
           </div>
 
-          {/* CENTER RESET BUTTON */}
           <motion.button
             onClick={handleReset}
             disabled={loading}
@@ -178,8 +170,6 @@ const App = () => {
           >
             Reset
           </motion.button>
-
-          {/* ========== RESULTS ========== */}
 
           <h2 className="text-2xl font-bold text-center mb-6">Live Results</h2>
 
@@ -210,7 +200,6 @@ const App = () => {
         </motion.div>
       </main>
 
-      {/* Toast */}
       <AnimatePresence>
         {toast && (
           <motion.div
