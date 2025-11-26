@@ -10,6 +10,8 @@ This project demonstrates a modern DevOps toolchain and microservices patterns. 
 
 - **Microservices Architecture**: Decoupled services for voting, processing, and results.
 - **Asynchronous Processing**: Redis-based queuing for high throughput.
+- **One Vote Per Device**: Ensures fair voting by restricting users to a single active vote per device.
+- **Secured Administration**: Password-protected reset functionality.
 - **Infrastructure as Code**: Terraform for GCP resource provisioning.
 - **Kubernetes Orchestration**: Helm charts for deployment on GKE.
 - **CI/CD**: GitHub Actions for automated testing and code quality checks.
@@ -25,6 +27,47 @@ The application consists of the following components:
 4.  **Worker** (`app/worker`): A Python worker that consumes votes from Redis and stores them in the database.
 5.  **PostgreSQL**: A relational database for persistent storage of votes.
 6.  **Result API** (`app/result-api`): A FastAPI backend that queries the database and serves vote counts.
+
+```mermaid
+graph LR
+    User[User (Browser)] -->|Vote| UI[Vote UI]
+    UI -->|POST /vote| API[Vote API]
+    API -->|Push| Redis[(Redis Queue)]
+    Worker[Worker] -->|Pop| Redis
+    Worker -->|Upsert| DB[(PostgreSQL)]
+    ResultAPI[Result API] -->|Query| DB
+    UI -->|Poll| ResultAPI
+```
+
+## 🌟 Key Features Logic
+
+### One Vote Per Device
+
+To ensure fairness, the application enforces a "One Vote Per Device" policy.
+
+- **Frontend**: Generates a unique UUID (`voter_id`) and stores it in the browser's `localStorage`.
+- **Backend**: The `worker` uses an **UPSERT** (Update or Insert) strategy. If a vote already exists for a given `voter_id`, it updates the candidate instead of creating a new vote.
+
+```mermaid
+flowchart TD
+    A[User Opens App] --> B{Has Voter ID?}
+    B -- No --> C[Generate UUID]
+    B -- Yes --> D[Use Existing ID]
+    C --> D
+    D --> E[Cast Vote]
+    E --> F[Worker Processes]
+    F --> G{ID Exists in DB?}
+    G -- Yes --> H[Update Vote]
+    G -- No --> I[Insert New Vote]
+```
+
+### Secured Reset
+
+The ability to reset votes is protected to prevent unauthorized access.
+
+- **Protection**: The `/reset` endpoint requires an `X-Admin-Key` header.
+- **Password**: The default password is configured as `rivooq` (via the `ADMIN_KEY` environment variable).
+- **UI**: Clicking "Reset" prompts the user for this password.
 
 ## 🛠️ Technology Stack
 
@@ -151,4 +194,4 @@ If deployed with the monitoring stack, you can visualize these metrics in Grafan
 
 ---
 
-
+_Built with ❤️ by the Microvoting Platform Team_
