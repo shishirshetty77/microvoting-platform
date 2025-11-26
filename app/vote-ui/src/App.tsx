@@ -9,12 +9,21 @@ const App = () => {
   const [loading, setLoading] = useState(false);
 
   const handleReset = async () => {
+    const password = window.prompt("Enter Admin Password:");
+    if (!password) return;
+
     setLoading(true);
     try {
-      await axios.post('/api/reset');
+      await axios.post('/api/reset', {}, {
+        headers: { 'X-Admin-Key': password }
+      });
       setToast({ type: 'success', text: 'Votes reset!' });
-    } catch {
-      setToast({ type: 'error', text: 'Reset failed.' });
+    } catch (err: any) {
+      if (err.response && err.response.status === 401) {
+        setToast({ type: 'error', text: 'Unauthorized: Wrong Password.' });
+      } else {
+        setToast({ type: 'error', text: 'Reset failed.' });
+      }
     } finally {
       setLoading(false);
       setTimeout(() => setToast(null), 3000);

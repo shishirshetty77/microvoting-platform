@@ -74,6 +74,7 @@ services:
       - DB_NAME=postgres
       - DB_USER=postgres
       - DB_PASSWORD=postgres
+      - ADMIN_KEY=rivooq
     networks:
       - voting_network
     depends_on:

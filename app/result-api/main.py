@@ -97,6 +97,15 @@ def get_results():
 # Endpoint to reset votes
 @app.post("/reset")
 async def reset_votes(request: Request):
+    admin_key = os.getenv("ADMIN_KEY", "rivooq")
+    request_key = request.headers.get("X-Admin-Key")
+
+    if request_key != admin_key:
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"message": "Unauthorized. Invalid Admin Key."},
+        )
+
     conn = get_db_conn()
     if not conn:
         return JSONResponse(
