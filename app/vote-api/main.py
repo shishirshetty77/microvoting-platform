@@ -1,11 +1,13 @@
-import os
 import logging
-from fastapi import FastAPI, Request, status
+import os
+
+import uvicorn
+from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
-from redis import Redis, ConnectionError
-from pydantic import BaseModel
-from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import Counter
+from prometheus_fastapi_instrumentator import Instrumentator
+from pydantic import BaseModel
+from redis import ConnectionError, Redis
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -19,11 +21,6 @@ class Vote(BaseModel):
 
 # Initialize FastAPI app
 app = FastAPI()
-
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
 
 
 # Instrument the app with Prometheus
@@ -69,7 +66,8 @@ async def submit_vote(vote: Vote):
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
-                "message": "Voting service is currently unavailable. Could not connect to Redis."
+                "message": "Voting service is currently unavailable. "
+                           "Could not connect to Redis."
             },
         )
 
@@ -85,7 +83,9 @@ async def submit_vote(vote: Vote):
         logger.error(f"Error queueing vote: {e}")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"message": "An error occurred while processing the vote."},
+            content={
+                "message": "An error occurred while processing the vote."
+            },
         )
 
 
@@ -95,6 +95,4 @@ def health_check():
 
 
 if __name__ == "__main__":
-    import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=80)
