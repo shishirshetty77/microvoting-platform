@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: worker
 spec:
-  replicas: { { .Values.replicaCount } }
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       app: worker
@@ -14,15 +14,15 @@ spec:
     spec:
       containers:
         - name: worker
-          image: { { .Values.images.worker } }
+          image: "{{ .Values.images.worker }}"
           env:
             - name: REDIS_HOST
               value: "redis"
             - name: DB_HOST
               value: "db"
             - name: DB_USER
-              value: { { .Values.postgres.user | quote } }
+              value: {{ .Values.postgres.user | quote }}
             - name: DB_PASSWORD
-              value: { { .Values.postgres.password | quote } }
+              value: {{ .Values.postgres.password | quote }}
             - name: DB_NAME
-              value: { { .Values.postgres.db | quote } }
+              value: {{ .Values.postgres.db | quote }}

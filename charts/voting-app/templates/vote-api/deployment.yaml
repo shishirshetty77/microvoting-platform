@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: vote-api
 spec:
-  replicas: { { .values.replicaCount } }
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       app: vote-api
@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: vote-api
-          image: { { .Values.images.voteapi } }
+          image: "{{ .Values.images.voteApi }}"
           ports:
             - containerPort: 80
           env:
