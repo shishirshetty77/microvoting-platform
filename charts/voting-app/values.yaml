@@ -1,113 +1,15 @@
-# Global values
-global:
-  imageRegistry: "" # e.g., "us-central1-docker.pkg.dev/your-project-id/voting-app-images"
-  imagePullPolicy: IfNotPresent
+replicaCount: 2
 
-# Subchart configurations
-vote-api:
-  image:
-    repository: vote-api
-    tag: latest
-  redis:
-    host: redis-master # Override the redis host to use the alias from the bitnami chart
+images:
+  voteApi: shishir77/vote-api:latest
+  resultApi: shishir77/result-api:latest
+  worker: shishir77/worker:latest
+  voteUi: shishir77/vote-ui:latest
+  redis: redis:alpine
+  postgres: postgres:15-alpine
 
-result-api:
-  image:
-    repository: result-api
-    tag: latest
-  database:
-    host: postgresql # Override the db host to use the alias from the bitnami chart
-    secretName: postgresql # Bitnami chart creates a secret named 'postgresql'
+postgres:
+  user: postgres
+  password: postgres
+  db: postgres
 
-worker:
-  image:
-    repository: worker
-    tag: latest
-  redis:
-    host: redis-master
-  database:
-    host: postgresql
-    secretName: postgresql
-
-vote-ui:
-  image:
-    repository: vote-ui
-    tag: latest
-  service:
-    type: LoadBalancer # Expose the UI via a LoadBalancer for easy access
-  ingress:
-    enabled: true
-    hosts:
-      - host: voting-app.local
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-
-# Dependency configurations
-redis:
-  # Using the bitnami/redis chart
-  # We can override its values here
-  auth:
-    enabled: false # For simplicity in this example
-
-postgresql:
-  # Using the bitnami/postgresql chart
-  # We can override its values here
-  auth:
-    postgresPassword: "supersecretpassword" # You should override this
-  primary:
-    initdb:
-      scripts:
-        init.sql: |
-          CREATE TABLE IF NOT EXISTS votes (
-            id VARCHAR(255) PRIMARY KEY,
-            candidate VARCHAR(255) NOT NULL
-          );
-
-# Monitoring stack configuration
-monitoring:
-  # Using the prometheus-community/kube-prometheus-stack chart
-  enabled: true
-  prometheus:
-    prometheusSpec:
-      serviceMonitorSelectorNilUsesHelmValues: false
-  grafana:
-    enabled: true
-    sidecar:
-      dashboards:
-        enabled: true
-        label: grafana_dashboard
-    dashboards:
-      default:
-        voting-app-dashboard:
-          # Placeholder for Grafana dashboard JSON
-          json: |
-            {
-              "__inputs": [],
-              "__requires": [],
-              "annotations": {
-                "list": []
-              },
-              "editable": true,
-              "gnetId": null,
-              "graphTooltip": 0,
-              "id": null,
-              "links": [],
-              "panels": [],
-              "refresh": "5s",
-              "schemaVersion": 36,
-              "style": "dark",
-              "tags": [],
-              "templating": {
-                "list": []
-              },
-              "time": {
-                "from": "now-1h",
-                "to": "now"
-              },
-              "timepicker": {},
-              "timezone": "",
-              "title": "Voting App Dashboard",
-              "uid": "voting-app",
-              "version": 0
-            }
