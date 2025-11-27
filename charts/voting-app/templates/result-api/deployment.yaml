@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: result-api
 spec:
-  replicas: { { .Values.replicaCount } }
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       app: result-api
@@ -21,13 +21,13 @@ spec:
             - name: DB_HOST
               value: "db"
             - name: DB_USER
-              value: { { .Values.postgres.user | quote } }
+              value: {{ .Values.postgres.user | quote }}
             - name: DB_PASSWORD
-              value: { { .Values.postgres.password | quote } }
+              value: {{ .Values.postgres.password | quote }}
             - name: DB_NAME
-              value: { { .Values.postgres.db | quote } }
+              value: {{ .Values.postgres.db | quote }}
             - name: ADMIN_KEY
-              value: { { .Values.resultApi.adminKey | quote } }
+              value: {{ .Values.resultApi.adminKey | quote }}
           livenessProbe:
             httpGet:
               path: /health
