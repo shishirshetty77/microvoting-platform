@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: result-api
+spec:
+  replicas: { { .Values.replicaCount } }
+  selector:
+    matchLabels:
+      app: result-api
+  template:
+    metadata:
+      labels:
+        app: result-api
+    spec:
+      containers:
+        - name: result-api
+          image: { { .Values.images.resultApi } }
+          ports:
+            - containerPort: 80
+          env:
+            - name: DB_HOST
+              value: "db"
+            - name: DB_USER
+              value: { { .Values.postgres.user | quote } }
+            - name: DB_PASSWORD
+              value: { { .Values.postgres.password | quote } }
+            - name: DB_NAME
+              value: { { .Values.postgres.db | quote } }
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5

@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: result-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: result-api
+  template:
+    metadata:
+      labels:
+        app: result-api
+    spec:
+      containers:
+        - name: result-api
+          image: shishir77/result-api:latest
+          ports:
+            - containerPort: 80
+          env:
+            - name: DB_HOST
+              value: "db"
+            - name: DB_USER
+              value: "postgres"
+            - name: DB_PASSWORD
+              value: "postgres"
+            - name: DB_NAME
+              value: "postgres"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
