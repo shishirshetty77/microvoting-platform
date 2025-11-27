@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: vote-api
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: { { .Values.replicaCount } }
   selector:
     matchLabels:
       app: vote-api
@@ -20,6 +20,8 @@ spec:
           env:
             - name: REDIS_HOST
               value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
           livenessProbe:
             httpGet:
               path: /health
