@@ -13,3 +13,5 @@ postgres:
   password: postgres
   db: postgres
 
+resultApi:
+  adminKey: test123
