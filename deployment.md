@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide provides step-by-step instructions to set up a local Kubernetes cluster using Kind, deploy the Microvoting Platform using Helm, and configure a complete monitoring stack with Prometheus, Grafana, and Loki.
+This guide provides step-by-step instructions to set up a Kubernetes cluster, deploy the Microvoting Platform using **ArgoCD (GitOps)**, implement a **Rolling Update** strategy, and configure a complete **Monitoring Stack** (Prometheus, Grafana, Loki).
 
 ## Prerequisites
 
@@ -10,12 +10,13 @@ Ensure you have the following tools installed:
 - [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
 - [Kubectl](https://kubernetes.io/docs/tasks/tools/)
 - [Helm](https://helm.sh/docs/intro/install/)
+- [ArgoCD CLI](https://argo-cd.readthedocs.io/en/stable/cli_installation/) (Optional but recommended)
 
 ---
 
 ## 1. Cluster Setup
 
-Create a new Kubernetes cluster using Kind.
+Create a new Kubernetes cluster using Kind (or use an existing cluster like EKS/GKE/EC2).
 
 ```bash
 kind create cluster --name microvoting
@@ -29,138 +30,130 @@ kubectl cluster-info --context kind-microvoting
 
 ---
 
-## 2. Application Deployment
+## 2. GitOps with ArgoCD
 
-Deploy the voting application using the provided Helm chart.
+We use ArgoCD to manage the application deployment automatically from Git.
 
-### Install the Chart
+### Install ArgoCD
 
-Navigate to the project root and run:
+1.  Create the namespace:
+    ```bash
+    kubectl create namespace argocd
+    ```
+2.  Install ArgoCD:
+    ```bash
+    kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+    ```
+
+### Access ArgoCD UI
+
+1.  **Get the Admin Password:**
+    ```bash
+    kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
+    ```
+2.  **Port Forward:**
+    ```bash
+    kubectl port-forward svc/argocd-server -n argocd 8080:443
+    ```
+3.  **Login:**
+    - URL: [https://localhost:8080](https://localhost:8080)
+    - User: `admin`
+    - Password: (Output from step 1)
+
+### Deploy Application
+
+Apply the ArgoCD Application manifest to deploy the voting app:
 
 ```bash
-helm install voting-app ./charts/voting-app --namespace voting --create-namespace
+kubectl apply -f argocd-app.yaml
 ```
 
-### Verify Deployment
-
-Check if all application pods are running:
-
-```bash
-kubectl get pods -n voting
-```
-
-### Access the Application
-
-To access the Vote UI and Result API locally, use port-forwarding:
-
-**Vote UI:**
-
-```bash
-kubectl port-forward svc/vote-ui 3000:80 -n voting
-```
-
-Access at: [http://localhost:3000](http://localhost:3000)
-
-**Result API:**
-
-```bash
-kubectl port-forward svc/result-api 8081:80 -n voting
-```
-
-Access at: [http://localhost:8081](http://localhost:8081)
+ArgoCD will now sync the `charts/voting-app` from your GitHub repository to the `voting` namespace.
 
 ---
 
-## 3. Monitoring Stack Setup (PLG Stack)
+## 3. Deployment Strategy (Rolling Update)
 
-We will install Prometheus (Metrics), Loki (Logs), and Grafana (Visualization).
+The application is configured with a **Rolling Update** strategy to ensure zero downtime during updates.
 
-### Add Helm Repositories
+### Configuration
+
+The `deployment.yaml` files include:
+
+```yaml
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 25%
+    maxUnavailable: 25%
+```
+
+### Verifying an Update
+
+1.  Change `replicaCount` in `charts/voting-app/values.yaml` (e.g., to 6).
+2.  Push the change to GitHub.
+3.  Watch the pods update one by one:
+    ```bash
+    kubectl get pods -n voting -w
+    ```
+
+---
+
+## 4. Monitoring Stack Setup (PLG Stack)
+
+We use Prometheus (Metrics), Loki (Logs), and Grafana (Visualization).
+
+### Install via Helm
 
 ```bash
+# Add Repos
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo add grafana https://grafana.github.io/helm-charts
 helm repo update
-```
 
-### Create Monitoring Namespace
-
-```bash
+# Create Namespace
 kubectl create namespace monitoring
-```
 
-### Install Prometheus & Grafana
-
-This installs the `kube-prometheus-stack` which includes Prometheus, Grafana, and Node Exporter.
-
-```bash
+# Install Prometheus & Grafana
 helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring
+
+# Install Loki & Promtail
+helm install loki grafana/loki-stack --namespace monitoring --set grafana.enabled=false,loki.isDefault=false
 ```
-
-### Install Loki & Promtail
-
-This installs Loki for log storage and Promtail for log shipping. We disable the extra Grafana instance included in this chart.
-
-```bash
-helm install loki grafana/loki-stack --namespace monitoring --set promtail.enabled=true,grafana.enabled=false,loki.isDefault=false
-```
-
-_Note: `loki.isDefault=false` is important to prevent conflicts with Prometheus as the default datasource._
-
----
-
-## 4. Configuration & Access
 
 ### Access Grafana
 
-1.  **Get the Admin Password:**
+1.  **Get Admin Password:**
 
     ```bash
     kubectl get secret --namespace monitoring prometheus-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
     ```
 
-2.  **Port Forward Grafana:**
+2.  **Port Forward:**
+    To access on port **3001** (accessible from any IP):
 
     ```bash
-    kubectl port-forward svc/prometheus-grafana 3001:80 --namespace monitoring
+    kubectl port-forward svc/prometheus-grafana -n monitoring 3001:80 --address 0.0.0.0
     ```
 
-    _If running on a remote server (like EC2), add `--address 0.0.0.0` to the command._
-
 3.  **Login:**
-    - URL: [http://localhost:3001](http://localhost:3001)
+    - URL: `http://<YOUR-IP>:3001`
     - User: `admin`
-    - Password: (The output from step 1)
+    - Password: (Output from step 1)
 
-### Configure Loki Datasource
+### Dashboards & Logs
 
-1.  In Grafana, go to **Configuration** (Gear Icon) -> **Data Sources**.
-2.  Click **Add data source**.
-3.  Select **Loki**.
-4.  **Name:** `Loki-Manual`
-5.  **URL:** `http://loki:3100`
-6.  Click **Save & Test**.
-
-### Import Dashboard
-
-To visualize cluster metrics (CPU, Memory, Network):
-
-1.  Go to **Dashboards** (Four Squares Icon) -> **Import**.
-2.  Enter Dashboard ID: **315** (Kubernetes Cluster Monitoring).
-3.  Click **Load**.
-4.  Select **Prometheus** as the data source.
-5.  Click **Import**.
+- **Cluster Metrics:** Go to **Dashboards** -> **Browse** -> **Kubernetes / Compute Resources / Cluster**.
+- **Application Logs:** Go to **Explore** -> Select **Loki** datasource -> Run query `{namespace="voting"}`.
 
 ---
 
 ## 5. Troubleshooting
 
 **"Too many open files" Error in Promtail:**
-If Promtail crashes, you may need to increase file watch limits on your node (especially for EC2/Linux):
+If Promtail crashes, increase file watch limits on the node:
 
 ```bash
 sudo sysctl -w fs.inotify.max_user_instances=512
 sudo sysctl -w fs.inotify.max_user_watches=524288
 ```
-
-Restart the Promtail pods after applying this fix.
