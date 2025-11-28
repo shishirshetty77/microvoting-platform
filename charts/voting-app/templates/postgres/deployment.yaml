@@ -19,11 +19,11 @@ spec:
             - containerPort: 5432
           env:
             - name: POSTGRES_USER
-              value: { { .Values.postgres.user | quote } }
+              value: {{ .Values.postgres.user | quote }}
             - name: POSTGRES_PASSWORD
-              value: { { .Values.postgres.password | quote } }
+              value: {{ .Values.postgres.password | quote }}
             - name: POSTGRES_DB
-              value: { { .Values.postgres.db | quote } }
+              value: {{ .Values.postgres.db | quote }}
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
           volumeMounts:
