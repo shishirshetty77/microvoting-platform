@@ -60,6 +60,8 @@ We use ArgoCD to manage the application deployment automatically from Git.
     - User: `admin`
     - Password: (Output from step 1)
 
+![ArgoCD Login](images/argocd1.png)
+
 ### Deploy Application
 
 Apply the ArgoCD Application manifest to deploy the voting app:
@@ -140,6 +142,8 @@ helm install loki grafana/loki-stack --namespace monitoring --set grafana.enable
     - URL: `http://<YOUR-IP>:3001`
     - User: `admin`
     - Password: (Output from step 1)
+
+![Grafana Dashboard](images/grafana1.png)
 
 ### Dashboards & Logs
 

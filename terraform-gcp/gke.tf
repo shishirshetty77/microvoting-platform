@@ -20,6 +20,8 @@ resource "google_container_cluster" "primary" {
   # Enable Cloud Monitoring and Logging
   monitoring_service = "monitoring.googleapis.com/kubernetes"
   logging_service    = "logging.googleapis.com/kubernetes"
+
+  deletion_protection = false
 }
 
 # Managed Node Pool
