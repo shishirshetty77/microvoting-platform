@@ -1,4 +1,4 @@
-replicaCount: 12
+replicaCount: 2
 
 images:
   voteApi: shishir77/vote-api:latest
