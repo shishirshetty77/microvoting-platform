@@ -1,4 +1,4 @@
-replicaCount: 2
+replicaCount: 3
 
 images:
   voteApi: shishir77/vote-api:latest
@@ -14,4 +14,4 @@ postgres:
   db: postgres
 
 resultApi:
-  adminKey: test123
+  adminKey: test123 #update to your own password this is just a demo one
