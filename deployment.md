@@ -148,7 +148,47 @@ helm install loki grafana/loki-stack --namespace monitoring --set grafana.enable
 
 ---
 
-## 5. Troubleshooting
+## 5. Teardown & Restoration
+
+### Stopping to Save Costs
+
+To stop billing for your cloud instance (EC2/GCP):
+
+1.  **Stop the Instance:**
+    - **GCP:** `gcloud compute instances stop <INSTANCE_NAME> --zone <ZONE>`
+    - **AWS:** Go to EC2 Console -> Select Instance -> Instance State -> **Stop**.
+
+### Restoring Everything
+
+When you start the instance again, Kubernetes might be empty (if it was a temporary cluster) or paused. To bring the full stack back up:
+
+1.  **Start the Instance:**
+
+    - **GCP:** `gcloud compute instances start <INSTANCE_NAME> --zone <ZONE>`
+
+2.  **Re-Install ArgoCD:**
+
+    ```bash
+    kubectl create namespace argocd
+    kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+    ```
+
+3.  **Re-Deploy App:**
+
+    ```bash
+    kubectl apply -f argocd-app.yaml
+    ```
+
+4.  **Re-Install Monitoring:**
+    ```bash
+    kubectl create namespace monitoring
+    helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring
+    helm install loki grafana/loki-stack --namespace monitoring --set grafana.enabled=false,loki.isDefault=false
+    ```
+
+---
+
+## 6. Troubleshooting
 
 **"Too many open files" Error in Promtail:**
 If Promtail crashes, increase file watch limits on the node:
