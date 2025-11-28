@@ -16,6 +16,10 @@ resource "google_container_cluster" "primary" {
     cluster_secondary_range_name  = "pod-ranges"
     services_secondary_range_name = "service-ranges"
   }
+
+  # Enable Cloud Monitoring and Logging
+  monitoring_service = "monitoring.googleapis.com/kubernetes"
+  logging_service    = "logging.googleapis.com/kubernetes"
 }
 
 # Managed Node Pool
@@ -33,7 +37,7 @@ resource "google_container_node_pool" "primary_nodes" {
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform"
     ]
-    
+
     disk_size_gb = 30 # Reduced disk size to save cost
     disk_type    = "pd-standard"
   }
