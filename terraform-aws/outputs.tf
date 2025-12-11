@@ -53,3 +53,8 @@ output "configure_kubectl" {
   description = "Command to configure kubectl"
   value       = "aws eks update-kubeconfig --region ${var.aws_region} --name ${aws_eks_cluster.main.name}"
 }
+
+output "ebs_csi_driver_role_arn" {
+  description = "IAM role ARN for EBS CSI driver"
+  value       = aws_iam_role.ebs_csi_driver.arn
+}
