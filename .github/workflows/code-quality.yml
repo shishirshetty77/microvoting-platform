@@ -8,6 +8,8 @@ on:
     paths-ignore:
       - "k8s/**"
       - "charts/**"
+      - "terraform-aws/**"
+      - "terraform-gcp/**"
   pull_request:
     branches:
       - main
@@ -15,6 +17,8 @@ on:
     paths-ignore:
       - "k8s/**"
       - "charts/**"
+      - "terraform-aws/**"
+      - "terraform-gcp/**"
 
 jobs:
   vote-api:
